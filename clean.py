@@ -7,6 +7,10 @@ import numpy as np
 import statistics as st
 import re
 
+# training-validation split. For now, use 50% train, 20% val, 30% test so
+TRAIN_NUM = 5
+TRAIN_DENOM = 7
+
 # for handling the money cleaning
 MONEY_PATTERN = r'[-+]?\$?((?:\d+\.\d+)|(?:\d+)|(?:\.\d+))(?:\s*([A-Za-z]+))?'
 CENTS_WORDS = ['cents', 'c']
@@ -280,8 +284,17 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         'text_lilies_music',
     ]
 
+    # compute the IDs - seed the random choice so that we get a repeatable outcome
+    rng = np.random.default_rng(seed=123456789)
+    # divide the shape by 3 because there are 3 paintings
+    sz = in_df.shape[0] // 3
+    before = np.array(in_df['unique_id'].unique())
+    samples = list(rng.choice(before, (sz * TRAIN_NUM) // TRAIN_DENOM, replace=False))
+    is_train = in_df['unique_id'].isin(samples)
+
     # init new df
-    out_df = pd.DataFrame({"unique_id": in_df['unique_id'], 'painting': in_df['Painting']})
+    out_df = pd.DataFrame({"unique_id": in_df['unique_id'], 'painting': in_df['Painting'], 
+                           'is_train': is_train})
     
     # handle numerical values - if not present, should we take mean or mode?
 
