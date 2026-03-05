@@ -61,6 +61,41 @@ MUSIC_IGNORE = [
     'song'
 ]
 
+# unused presently, for reference
+out_columns = [
+        'unique_id',
+        'painting'
+        'emotional_intensity',
+        'evokes_sombre',
+        'evokes_content',
+        'evokes_calm',
+        'evokes_unease',
+        'prominent_colour_count',
+        'prominent_object_count',
+        'place_bedroom',
+        'place_office',
+        'place_living_room',
+        'place_dining_room',
+        'view_friends',
+        'view_family',
+        'view_coworkers',
+        'view_by_yourself',
+        'like_fall',
+        'like_winter',
+        'like_spring',
+        'like_summer',
+        'monetary_value',
+        'text_clock_feel',
+        'text_clock_food',
+        'text_clock_music',
+        'text_starry_feel',
+        'text_starry_food',
+        'text_starry_music',
+        'text_lilies_feel',
+        'text_lilies_food',
+        'text_lilies_music',
+    ]
+
 CLOCK_FEEL = {}
 CLOCK_FOOD = {}
 CLOCK_MUSIC = {}
@@ -243,47 +278,13 @@ def process_text(in_df: pd.DataFrame) -> dict[str, pd.Series]:
                 new_col.append(val)
 
             new_col_name = f"text_{painting}_{quest}"
-            output[new_col_name] = pd.Series(new_col)
+            output[new_col_name] = pd.Series(new_col, index=in_df.index)
 
     return output
 
 
 # clean the given dataframe by applying a number of rules
 def clean(in_df: pd.DataFrame) -> pd.DataFrame:
-    out_columns = [
-        'unique_id',
-        'painting'
-        'emotional_intensity',
-        'evokes_sombre',
-        'evokes_content',
-        'evokes_calm',
-        'evokes_unease',
-        'prominent_colour_count',
-        'prominent_object_count',
-        'place_bedroom',
-        'place_office',
-        'place_living_room',
-        'place_dining_room',
-        'view_friends',
-        'view_family',
-        'view_coworkers',
-        'view_by_yourself',
-        'like_fall',
-        'like_winter',
-        'like_spring',
-        'like_summer',
-        'monetary_value',
-        'text_clock_feel',
-        'text_clock_food',
-        'text_clock_music',
-        'text_starry_feel',
-        'text_starry_food',
-        'text_starry_music',
-        'text_lilies_feel',
-        'text_lilies_food',
-        'text_lilies_music',
-    ]
-
     # compute the IDs - seed the random choice so that we get a repeatable outcome
     rng = np.random.default_rng(seed=123456789)
     # divide the shape by 3 because there are 3 paintings
