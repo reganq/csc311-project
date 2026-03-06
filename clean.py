@@ -6,8 +6,12 @@ import pandas as pd
 import numpy as np
 import statistics as st
 import re
+import math
 
-# training-validation split. For now, use 50% train, 20% val, 30% test so
+# whether to use similarity vector (false) or bag-of-words (true) for text features
+USE_BAG = False
+
+# training-validation split. For now, use 50% train, 20% val, 30% test
 TRAIN_NUM = 5
 TRAIN_DENOM = 7
 
@@ -95,6 +99,20 @@ out_columns = [
         'text_lilies_food',
         'text_lilies_music',
     ]
+
+PAINTINGS = {
+    "The Persistence of Memory": 0,
+    "The Starry Night": 1,
+    "The Water Lily Pond": 2
+}
+
+PAINTINGS_INVERSE = [
+    "The Persistence of Memory",
+    "The Starry Night",
+    "The Water Lily Pond"
+]
+
+INVALID_PATTERN = r"([^-]+)-(\d+)"
 
 CLOCK_FEEL = {}
 CLOCK_FOOD = {}
@@ -282,6 +300,65 @@ def process_text(in_df: pd.DataFrame) -> dict[str, pd.Series]:
 
     return output
 
+# process the text features in the given dataframe to using "bag of words" approach
+def process_text_bag(in_df: pd.DataFrame) -> dict[str, pd.Series]:
+    # setup set of trivial words
+    stopwords = set(BASE_IGNORE)
+
+    questions = [
+        ('feel', 'Describe how this painting makes you feel.'),
+        ('food', 'If this painting was a food, what would be?'),
+        ('music', 'Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.')
+    ]
+
+    # find the unique words for each question
+    words_lst = []
+    for _, title in questions:
+        nowords = stopwords.copy()
+        for word in title.strip('.,!?()[]{}"\'').split():
+            nowords.add(word)
+        
+        if 'feel' in title:
+            nowords.update(FEEL_IGNORE)
+        elif 'food' in title:
+            nowords.update(FOOD_IGNORE)
+        else:
+            nowords.update(MUSIC_IGNORE)
+
+        # find unique words for this question
+        words = set()
+
+        for line in in_df[title]:
+            if not isinstance(line, str):
+                continue
+            for w in line.split():
+                w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
+                if w_clean in nowords or w_clean == '':
+                    continue
+                words.add(w_clean)
+
+        words_lst.append(words)
+
+    output = {}
+    # compute which unique words appear in each row
+    for i, tup in enumerate(questions):
+        quest = tup[0]
+        t = tup[1]
+
+        words = words_lst[i]
+
+        for word in words:
+            new_col = []
+            for index, row in in_df.iterrows():
+                present = (isinstance(row[t], str) and word in row[t])
+
+                new_col.append(present)
+
+            new_col_name = f"{quest}_{word}"
+            output[new_col_name] = pd.Series(new_col, index=in_df.index)
+
+    return output
+
 
 # clean the given dataframe by applying a number of rules
 def clean(in_df: pd.DataFrame) -> pd.DataFrame:
@@ -296,112 +373,188 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
     # init new df
     out_df = pd.DataFrame({"unique_id": in_df['unique_id'], 'painting': in_df['Painting'], 
                            'is_train': is_train})
+
+    # mapping we use to track which responses are "garbage" so that we do not train/validate on them
+    garb_map = {}
     
     # handle numerical values - if not present, should we take mean or mode?
 
     # emotional intensity
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'On a scale of 1–10, how intense is the emotion conveyed by the artwork?']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'On a scale of 1–10, how intense is the emotion conveyed by the artwork?']).iterrows():
         try:
-            val = int(line[1].iloc[1])
+            val = int(line[1].iloc[2])
         except ValueError:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+
         vals.append(val)
-    print(f'For emotional_intensity, valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+    
+    # replace empty values with the mode
+    mode = st.mode(vals)
+    for j in invalid:
+        vals[j] = mode
+
     out_df = out_df.assign(emotional_intensity=vals)
 
     # sombre
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'This art piece makes me feel sombre.']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'This art piece makes me feel sombre.']).iterrows():
         try:
-            val = int(line[1].iloc[1][:1])
+            val = int(line[1].iloc[2][:1])
         except (ValueError, TypeError) as e:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+
         vals.append(val)
-    print(f'For evokes_sombre, valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+
+    # replace empty values with the mode
+    mode = st.mode(vals)
+    for j in invalid:
+        vals[j] = mode
+    
     out_df = out_df.assign(evokes_sombre=vals)
 
     # content
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'This art piece makes me feel content.']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'This art piece makes me feel content.']).iterrows():
         try:
-            val = int(line[1].iloc[1][:1])
+            val = int(line[1].iloc[2][:1])
         except (ValueError, TypeError) as e:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+
         vals.append(val)
-    print(f'For evokes_content, valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+        
+    # replace empty values with the mode
+    mode = st.mode(vals)
+    for j in invalid:
+        vals[j] = mode
+
     out_df = out_df.assign(evokes_content=vals)
 
     # calm
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'This art piece makes me feel calm.']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'This art piece makes me feel calm.']).iterrows():
         try:
-            val = int(line[1].iloc[1][:1])
+            val = int(line[1].iloc[2][:1])
         except (ValueError, TypeError) as e:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+
         vals.append(val)
-    print(f'For evokes_calm valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+
+    mode = st.mode(vals)
+    for j in invalid:
+        vals[j] = mode
+    
     out_df = out_df.assign(evokes_calm=vals)
 
     # uneasy
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'This art piece makes me feel uneasy.']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'This art piece makes me feel uneasy.']).iterrows():
         try:
-            val = int(line[1].iloc[1][:1])
+            val = int(line[1].iloc[2][:1])
         except (ValueError, TypeError) as e:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+            
         vals.append(val)
-    print(f'For evokes_uneasy, valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+    
+    mode = st.mode(vals)
+    for j in invalid:
+        vals[j] = mode
+    
     out_df = out_df.assign(evokes_uneasy=vals)
 
     # number colours
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'How many prominent colours do you notice in this painting?']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'How many prominent colours do you notice in this painting?']).iterrows():
         try:
-            val = int(line[1].iloc[1])
+            val = int(line[1].iloc[2])
         except ValueError:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+
         vals.append(val)
-    print(f'For prominent_colour_count, valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+    
+    avg = st.mean(vals)
+    for j in invalid:
+        vals[j] = avg
+
     out_df = out_df.assign(prominent_colour_count=vals)
 
     # number objects
     vals = []
     invalid = []
-    for line in in_df.get(["unique_id", 'How many objects caught your eye in the painting?']).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', 'How many objects caught your eye in the painting?']).iterrows():
         try:
             val = int(line[1].iloc[1])
         except ValueError:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+
         vals.append(val)
-    print(f'For prominent_object_count, valid are {len(vals) - len(invalid)} / {len(vals)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+        
+    avg = st.mean(vals)
+    for j in invalid:
+        vals[j] = avg
+
     out_df = out_df.assign(prominent_object_count=vals)
 
     # handle categorical values
@@ -431,8 +584,8 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         in_living.append(l)
         in_dining.append(d)
     
-    print(f'For room, valid are {len(in_bedroom) - len(invalid)} / {len(in_bedroom)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
+    #print(f'For room, valid are {len(in_bedroom) - len(invalid)} / {len(in_bedroom)}')
+    #print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
     out_df = out_df.assign(place_bedroom=in_bedroom, place_office=in_office, 
                            place_living_room=in_living, place_dining_room=in_dining)
 
@@ -461,8 +614,8 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         coworkers.append(c)
         solo.append(s)
     
-    print(f'For viewing with, valid are {len(friends) - len(invalid)} / {len(friends)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
+    #print(f'For viewing with, valid are {len(friends) - len(invalid)} / {len(friends)}')
+    #print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
     out_df = out_df.assign(view_friends=friends, view_family=family, 
                            view_coworkers=coworkers, view_by_yourself=solo)
 
@@ -491,8 +644,8 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         summer.append(su)
         spring.append(sp)
     
-    print(f'For season, valid are {len(friends) - len(invalid)} / {len(friends)}')
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
+    #print(f'For season, valid are {len(friends) - len(invalid)} / {len(friends)}')
+    #print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
     out_df = out_df.assign(like_fall=fall, like_winter=winter, 
                            like_spring=spring, like_summer=summer)
     
@@ -500,8 +653,8 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
     # monetary value
     vals = []
     invalid = []
-    nomatch = []
-    for line in in_df.get(["unique_id", "How much (in Canadian dollars) would you be willing to pay for this painting?"]).iterrows():
+    i = 0
+    for line in in_df.get(["unique_id", 'Painting', "How much (in Canadian dollars) would you be willing to pay for this painting?"]).iterrows():
         try:
             match = re.search(MONEY_PATTERN, line[1].iloc[1].replace(',', '').lower())
 
@@ -521,42 +674,69 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
                 elif word in BILLIONS_WORDS:
                     factor = 1000000000
 
-                val = number * factor
+                val = math.log10(number * factor)
             else:
-                val = 0
-                nomatch.append((line[1].iloc[0], line[1].iloc[1]))
+                # disgustingly hacky - will treat no match as an invalid val
+                raise AttributeError
         except AttributeError:
             val = 0
-            invalid.append((line[1].iloc[0], line[1].iloc[1]))
+            invalid.append(i)
+
+            k = f'{line[1].iloc[0]}-{PAINTINGS[line[1].iloc[1]]}'
+            if k not in garb_map:
+                garb_map[k] = 0
+            garb_map[k] += 1
+            
         vals.append(val)
-    print(f'For monetary_value, valid are {len(vals) - len(invalid) - len(nomatch)} / {len(vals)}')
-    print('non matching are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in nomatch]))
-    print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    print(f'mean: {st.mean(vals)}, mode: {st.mode(vals)} median: {st.median(vals)}')
+        i += 1
+
+    avg = st.mean(vals)
+    for j in invalid:
+        vals[j] = avg
+
     out_df = out_df.assign(monetary_value=vals)
 
     # other text questions - create new weight vectors
-    out_df = out_df.assign(**process_text(in_df))
+    if USE_BAG:
+        out_df = out_df.assign(**process_text_bag(in_df))
+    else:
+        out_df = out_df.assign(**process_text(in_df))
+
+    # do we need to remove some rows? there are 8 rows we are checking for invalids
+    invalid_ids = set()
+    for k in garb_map:
+        match = re.search(INVALID_PATTERN, k)
+        if match and garb_map[k] > 4:
+            print(f"Painting: {PAINTINGS_INVERSE[int(match.group(2))]}, ID: {match.group(1)}, Invalid: {garb_map[k]}/8")
+            invalid_ids.add(match.group(1))
+
+    print(f"Removing {len(invalid_ids)} IDs - {3 * len(invalid_ids)} rows")
+    out_df = out_df[~out_df['unique_id'].isin(invalid_ids)]
 
     return out_df
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print(f'usage: {sys.argv[0]} <data-path> <out-path> <ids-path OPTIONAL> <weights-path OPTIONAL>')
+        print(f'usage: {sys.argv[0]} <data-path> <out-path> <text-handle OPTIONAL> <ids-path OPTIONAL> <weights-path OPTIONAL>')
         exit(1)
 
     dpath = sys.argv[1]
     df = pd.read_csv(dpath)
 
     if len(sys.argv) > 3:
+        # get which text feature processing to do. 1 for bag of words
+        USE_BAG = bool(int(sys.argv[3]))
+    
+
+    if len(sys.argv) > 4:
         # use given set of indices - otherwise cleans the whole thing
-        ipath = sys.argv[3]
+        ipath = sys.argv[4]
         ids = np.loadtxt(ipath, dtype=[("id", "i4")])
         df = df[df["unique_id"].isin(ids["id"])]
 
-    if len(sys.argv) > 4:
+    if len(sys.argv) > 5:
         # load the weight dictionaries from the given file
-        load_weights(sys.argv[4])
+        load_weights(sys.argv[5])
     else:
         # compute the weights from the dataframe
         compute_weights(df)
