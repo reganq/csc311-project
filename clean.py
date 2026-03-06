@@ -712,7 +712,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         match = re.search(INVALID_PATTERN, k)
         if match and garb_map[k] > 4:
             print(f"Painting: {PAINTINGS_INVERSE[int(match.group(2))]}, ID: {match.group(1)}, Invalid: {garb_map[k]}/8")
-            invalid_ids.add(match.group(1))
+            invalid_ids.add(int(match.group(1)))
 
     print(f"Removing {len(invalid_ids)} IDs - {3 * len(invalid_ids)} rows")
     out_df = out_df[~out_df['unique_id'].isin(invalid_ids)]
