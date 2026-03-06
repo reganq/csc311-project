@@ -526,9 +526,9 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
     
-    avg = st.mean(vals)
+    mode = st.mode(vals)
     for j in invalid:
-        vals[j] = avg
+        vals[j] = mode
 
     out_df = out_df.assign(prominent_colour_count=vals)
 
@@ -538,7 +538,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
     i = 0
     for line in in_df.get(["unique_id", 'Painting', 'How many objects caught your eye in the painting?']).iterrows():
         try:
-            val = int(line[1].iloc[1])
+            val = int(line[1].iloc[2])
         except ValueError:
             val = 0
             invalid.append(i)
@@ -551,9 +551,9 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
         
-    avg = st.mean(vals)
+    mode = st.mode(vals)
     for j in invalid:
-        vals[j] = avg
+        vals[j] = mode
 
     out_df = out_df.assign(prominent_object_count=vals)
 
@@ -656,7 +656,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
     i = 0
     for line in in_df.get(["unique_id", 'Painting', "How much (in Canadian dollars) would you be willing to pay for this painting?"]).iterrows():
         try:
-            match = re.search(MONEY_PATTERN, line[1].iloc[1].replace(',', '').lower())
+            match = re.search(MONEY_PATTERN, line[1].iloc[2].replace(',', '').lower())
 
             if match:
                 number = float(match.group(1))
@@ -674,7 +674,11 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
                 elif word in BILLIONS_WORDS:
                     factor = 1000000000
 
-                val = math.log10(number * factor)
+                # do not log negative values or 0, set it to log_10(0.001) = -3
+                if number <= 0:
+                    val = -3
+                else:
+                    val = math.log10(number * factor)
             else:
                 # disgustingly hacky - will treat no match as an invalid val
                 raise AttributeError
