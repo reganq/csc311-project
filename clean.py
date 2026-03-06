@@ -7,7 +7,10 @@ import numpy as np
 import statistics as st
 import re
 
-# training-validation split. For now, use 50% train, 20% val, 30% test so
+# whether to use similarity vector (false) or bag-of-words (true) for text features
+USE_BAG = True
+
+# training-validation split. For now, use 50% train, 20% val, 30% test
 TRAIN_NUM = 5
 TRAIN_DENOM = 7
 
@@ -282,6 +285,69 @@ def process_text(in_df: pd.DataFrame) -> dict[str, pd.Series]:
 
     return output
 
+# process the text features in the given dataframe to using "bag of words" approach
+def process_text_bag(in_df: pd.DataFrame) -> dict[str, pd.Series]:
+    # setup set of trivial words
+    stopwords = set(BASE_IGNORE)
+    for word in 'Describe how this painting makes you feel.'.strip('.,!?()[]{}"\'').split():
+        stopwords.add(word)
+    for word in 'If this painting was a food, what would be?'.strip('.,!?()[]{}"\'').split():
+        stopwords.add(word)
+    for word in 'Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.'.strip('.,!?()[]{}"\'').split():
+        stopwords.add(word)
+    stopwords.update(FEEL_IGNORE)
+    stopwords.update(FOOD_IGNORE)
+    stopwords.update(MUSIC_IGNORE)
+
+    # find all unique words
+    words = set()
+    for line in in_df['Describe how this painting makes you feel.']:
+        if not isinstance(line, str):
+            continue
+        for w in line.split():
+            w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
+            if w_clean in stopwords or w_clean == '':
+                continue
+            words.add(w_clean)
+    for line in in_df['If this painting was a food, what would be?']:
+        if not isinstance(line, str):
+            continue
+        for w in line.split():
+            w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
+            if w_clean in stopwords or w_clean == '':
+                continue
+            words.add(w_clean)
+    for line in in_df['Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.']:
+        if not isinstance(line, str):
+            continue
+        for w in line.split():
+            w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
+            if w_clean in stopwords or w_clean == '':
+                continue
+            words.add(w_clean)
+
+    output = {}
+    # compute which unique words appear in each row
+    for word in words:
+        new_col = []
+
+        for index, row in in_df.iterrows():
+            present = int(
+                (isinstance(row['Describe how this painting makes you feel.'], str) and
+                    word in row['Describe how this painting makes you feel.']) or 
+                (isinstance(row['If this painting was a food, what would be?'], str) and 
+                    word in row['If this painting was a food, what would be?']) or 
+                (isinstance(row['Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.'], str) and 
+                    word in row['Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.'])
+            )
+
+            new_col.append(present)
+
+        new_col_name = f"{word}_pres"
+        output[new_col_name] = pd.Series(new_col, index=in_df.index)
+
+    return output
+
 
 # clean the given dataframe by applying a number of rules
 def clean(in_df: pd.DataFrame) -> pd.DataFrame:
@@ -536,27 +602,34 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
     out_df = out_df.assign(monetary_value=vals)
 
     # other text questions - create new weight vectors
-    out_df = out_df.assign(**process_text(in_df))
+    if USE_BAG:
+        out_df = out_df.assign(**process_text_bag(in_df))
+    else:
+        out_df = out_df.assign(**process_text(in_df))
 
     return out_df
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print(f'usage: {sys.argv[0]} <data-path> <out-path> <ids-path OPTIONAL> <weights-path OPTIONAL>')
+        print(f'usage: {sys.argv[0]} <data-path> <out-path> <text-handle OPTIONAL> <ids-path OPTIONAL> <weights-path OPTIONAL>')
         exit(1)
 
     dpath = sys.argv[1]
     df = pd.read_csv(dpath)
 
     if len(sys.argv) > 3:
+        # get which text feature processing to do. 1 for bag of words
+        USE_BAG = bool(sys.argv[3])
+
+    if len(sys.argv) > 4:
         # use given set of indices - otherwise cleans the whole thing
-        ipath = sys.argv[3]
+        ipath = sys.argv[4]
         ids = np.loadtxt(ipath, dtype=[("id", "i4")])
         df = df[df["unique_id"].isin(ids["id"])]
 
-    if len(sys.argv) > 4:
+    if len(sys.argv) > 5:
         # load the weight dictionaries from the given file
-        load_weights(sys.argv[4])
+        load_weights(sys.argv[5])
     else:
         # compute the weights from the dataframe
         compute_weights(df)
