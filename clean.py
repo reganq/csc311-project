@@ -289,62 +289,58 @@ def process_text(in_df: pd.DataFrame) -> dict[str, pd.Series]:
 def process_text_bag(in_df: pd.DataFrame) -> dict[str, pd.Series]:
     # setup set of trivial words
     stopwords = set(BASE_IGNORE)
-    for word in 'Describe how this painting makes you feel.'.strip('.,!?()[]{}"\'').split():
-        stopwords.add(word)
-    for word in 'If this painting was a food, what would be?'.strip('.,!?()[]{}"\'').split():
-        stopwords.add(word)
-    for word in 'Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.'.strip('.,!?()[]{}"\'').split():
-        stopwords.add(word)
-    stopwords.update(FEEL_IGNORE)
-    stopwords.update(FOOD_IGNORE)
-    stopwords.update(MUSIC_IGNORE)
 
-    # find all unique words
-    words = set()
-    for line in in_df['Describe how this painting makes you feel.']:
-        if not isinstance(line, str):
-            continue
-        for w in line.split():
-            w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
-            if w_clean in stopwords or w_clean == '':
+    questions = [
+        ('feel', 'Describe how this painting makes you feel.'),
+        ('food', 'If this painting was a food, what would be?'),
+        ('music', 'Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.')
+    ]
+
+    # find the unique words for each question
+    words_lst = []
+    for _, title in questions:
+        nowords = stopwords.copy()
+        for word in title.strip('.,!?()[]{}"\'').split():
+            nowords.add(word)
+        
+        if 'feel' in title:
+            nowords.update(FEEL_IGNORE)
+        elif 'food' in title:
+            nowords.update(FOOD_IGNORE)
+        else:
+            nowords.update(MUSIC_IGNORE)
+
+        # find unique words for this question
+        words = set()
+
+        for line in in_df[title]:
+            if not isinstance(line, str):
                 continue
-            words.add(w_clean)
-    for line in in_df['If this painting was a food, what would be?']:
-        if not isinstance(line, str):
-            continue
-        for w in line.split():
-            w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
-            if w_clean in stopwords or w_clean == '':
-                continue
-            words.add(w_clean)
-    for line in in_df['Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.']:
-        if not isinstance(line, str):
-            continue
-        for w in line.split():
-            w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
-            if w_clean in stopwords or w_clean == '':
-                continue
-            words.add(w_clean)
+            for w in line.split():
+                w_clean = re.sub(r"[^\w\s]", "", w.strip().lower())
+                if w_clean in nowords or w_clean == '':
+                    continue
+                words.add(w_clean)
+
+        words_lst.append(words)
 
     output = {}
     # compute which unique words appear in each row
-    for word in words:
-        new_col = []
+    for i, tup in enumerate(questions):
+        quest = tup[0]
+        t = tup[1]
 
-        for index, row in in_df.iterrows():
-            present = int(
-                (isinstance(row['Describe how this painting makes you feel.'], str) and
-                    word in row['Describe how this painting makes you feel.']) or 
-                (isinstance(row['If this painting was a food, what would be?'], str) and 
-                    word in row['If this painting was a food, what would be?']) or 
-                (isinstance(row['Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.'], str) and 
-                    word in row['Imagine a soundtrack for this painting. Describe that soundtrack without naming any objects in the painting.'])
-            )
+        words = words_lst[i]
 
-            new_col.append(present)
+        for word in words:
+            new_col = []
+            for index, row in in_df.iterrows():
+                present = (isinstance(row[t], str) and word in row[t])
 
-        new_col_name = f"{word}_pres"
-        output[new_col_name] = pd.Series(new_col, index=in_df.index)
+                new_col.append(present)
+
+            new_col_name = f"{quest}_{word}"
+            output[new_col_name] = pd.Series(new_col, index=in_df.index)
 
     return output
 
