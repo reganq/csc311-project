@@ -350,7 +350,7 @@ def process_text_bag(in_df: pd.DataFrame) -> dict[str, pd.Series]:
         for word in words:
             new_col = []
             for index, row in in_df.iterrows():
-                present = (isinstance(row[t], str) and word in row[t])
+                present = int((isinstance(row[t], str) and word in row[t]))
 
                 new_col.append(present)
 
