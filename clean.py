@@ -350,7 +350,7 @@ def process_text_bag(in_df: pd.DataFrame) -> dict[str, pd.Series]:
         for word in words:
             new_col = []
             for index, row in in_df.iterrows():
-                present = (isinstance(row[t], str) and word in row[t])
+                present = int((isinstance(row[t], str) and word in row[t]))
 
                 new_col.append(present)
 
@@ -712,7 +712,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         match = re.search(INVALID_PATTERN, k)
         if match and garb_map[k] > 4:
             print(f"Painting: {PAINTINGS_INVERSE[int(match.group(2))]}, ID: {match.group(1)}, Invalid: {garb_map[k]}/8")
-            invalid_ids.add(match.group(1))
+            invalid_ids.add(int(match.group(1)))
 
     print(f"Removing {len(invalid_ids)} IDs - {3 * len(invalid_ids)} rows")
     out_df = out_df[~out_df['unique_id'].isin(invalid_ids)]
