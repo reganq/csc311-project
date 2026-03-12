@@ -57,9 +57,10 @@ Arguments:
     - activation: Which activation function to use.
     - batch_size: Size of the mini-batches for stochastic optimizers.
     - hidden_layer_sizes: Tuple of integers. The i-th element represents the number of neurons in the i-th hidden layer.
+    - random_state: Seed for the random number generator.
 """
-def train_neural_network(X: np.array, t: np.array, alpha: float, activation: str, batch_size: int, hidden_layer_sizes: tuple[int], feats: list[int]=[]) -> MLPClassifier:
-    mlp = MLPClassifier(alpha=alpha, activation=activation, batch_size=batch_size, hidden_layer_sizes=hidden_layer_sizes)
+def train_neural_network(X: np.array, t: np.array, alpha: float, activation: str, batch_size: int, hidden_layer_sizes: tuple[int], feats: list[int]=[], random_state: int=1) -> MLPClassifier:
+    mlp = MLPClassifier(alpha=alpha, activation=activation, batch_size=batch_size, hidden_layer_sizes=hidden_layer_sizes, random_state=random_state)
 
     if len(feats) != 0:
         X_use = X[:, feats]
