@@ -9,7 +9,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
 
 # maximum number of iterations to train for
-MAX_ITER = 1000
+MAX_ITER = 2000
+ADA_ITER = 1000
 TOLERANCE = 0.0001
 
 # random state for adaboost reproducability
@@ -132,13 +133,13 @@ def train_adaboost(X: np.array, t: np.array, reg: str=None, lam: float=0, rate: 
         return None
     
     if reg == 'l1':
-        log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER, tol=TOLERANCE, C=(1/lam),
+        log = LogisticRegression(fit_intercept=True, max_iter=ADA_ITER, tol=TOLERANCE, C=(1/lam),
                                      l1_ratio=1, solver='saga')
     elif reg == 'l2':
-        log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER, tol=TOLERANCE, C=(1/lam),
+        log = LogisticRegression(fit_intercept=True, max_iter=ADA_ITER, tol=TOLERANCE, C=(1/lam),
                                      l1_ratio=0)
     else:
-        log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER, tol=TOLERANCE, C=np.inf, l1_ratio=0)
+        log = LogisticRegression(fit_intercept=True, max_iter=ADA_ITER, tol=TOLERANCE, C=np.inf, l1_ratio=0)
 
     ada = AdaBoostClassifier(estimator=log, n_estimators=estimators, learning_rate=rate, random_state=RANDOM_STATE)
 
@@ -172,10 +173,9 @@ def build_all_models(lam,
     out = {}
 
     train_log = learning is None or estimators is None
-    if train_log
 
     if random_search:
-        for i in range(len(alpha)):
+        for i in range(len(lam)):
             la = lam[i]
             r = regularizer[i]
             e = estimators[i] if not train_log else 0
@@ -363,10 +363,12 @@ if __name__ == "__main__":
 
     # do the training
     if train_ada:
-        out_dict = parameter_search_adaboost(X_train, X_val, t_train, t_val, N)
+        out_dict = parameter_search_adaboost(X_train, t_train, X_val, t_val, N)
+        names = ['lambda', 'regularizer', 'num_estimators', 'learning_rate']
     else:
-        out_dict = parameter_search_logistic(X_train, X_val, t_train, t_val, N)
+        out_dict = parameter_search_logistic(X_train, t_train, X_val, t_val, N)
+        names = ['lambda', 'regularizer']
 
     res_df = pd.DataFrame.from_dict(out_dict, orient='index')
-    res_df.index.names = ['alpha', 'activation', 'batch_size', 'hidden_layer_sizes']
-    res_df.to_csv(outfile)
+    res_df.index.names = names
+    res_df.to_csv(ofile)
