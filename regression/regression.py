@@ -7,6 +7,7 @@ import pandas as pd
 import random
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.metrics import f1_score, precision_score, accuracy_score, recall_score
 
 # maximum number of iterations to train for
 MAX_ITER = 2000
@@ -191,8 +192,13 @@ def build_all_models(lam,
                 model = train_adaboost(X_train, t_train, reg=r, lam=la, estimators=e, rate=le)
 
             # store the validation and training scores in the `out` dictionary
-            out[t]['val'] = model.score(X_valid, t_valid)
-            out[t]['train'] = model.score(X_train, t_train)
+            t_pred = model.predict(X_val)
+            t_pred_train = model.predict(X_train)
+            out[t]['val_acc'] = accuracy_score(t_val, t_pred)
+            out[t]['val_recall'] = recall_score(t_val, t_pred, average='macro')
+            out[t]['val_pre'] = precision_score(t_val, t_pred, average='macro')
+            out[t]['val_f1'] = f1_score(t_val, t_pred, average='macro')
+            out[t]['train_acc'] = accuracy_score(t_train, t_pred_train)
 
     else:
         estimators_tmp = [0] if train_log else estimators
@@ -213,8 +219,14 @@ def build_all_models(lam,
                             model = train_adaboost(X_train, t_train, reg=r, lam=la, estimators=e, rate=le)
 
                         # store the validation and training scores in the `out` dictionary
-                        out[t]['val'] = model.score(X_valid, t_valid)
-                        out[t]['train'] = model.score(X_train, t_train)
+                        t_pred = model.predict(X_val)
+                        t_pred_train = model.predict(X_train)
+                        out[t]['val_acc'] = accuracy_score(t_val, t_pred)
+                        out[t]['val_recall'] = recall_score(t_val, t_pred, average='macro')
+                        out[t]['val_pre'] = precision_score(t_val, t_pred, average='macro')
+                        out[t]['val_f1'] = f1_score(t_val, t_pred, average='macro')
+                        out[t]['train_acc'] = accuracy_score(t_train, t_pred_train)
+
     return out
 
 """
@@ -249,24 +261,60 @@ Arguments:
 """
 def parameter_search_adaboost(X_train: np.array, t_train: np.array, X_val: np.array, t_val: np.array, N: int=0) -> dict:
     if N == 0:
-        res = build_all_models(lam=LAMBDA, regularizer=REGULARIZER, estimators=NUM_ESTIMATORS, learning=LEARNING_RATE, random_search=False, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
+        out = build_all_models(lam=LAMBDA, regularizer=REGULARIZER, estimators=NUM_ESTIMATORS, learning=LEARNING_RATE, random_search=False, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
     else:
         params = generate_params_rand(N)
 
-        res = build_all_models(lam=params['lambda'], regularizer=params['regularizer'], estimators=params['estimators'], learning=params['learning'], random_search=True, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
+        out = build_all_models(lam=params['lambda'], regularizer=params['regularizer'], estimators=params['estimators'], learning=params['learning'], random_search=True, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
 
     # search for the optimal combination of parameters
-    max_score = 0
-    best_params = None
-    for la, r, e, le in res:
-        if res[(la, r, e, le)]['val'] > max_score:
-            max_score = res[(la, r, e, le)]['val']
-            best_params = (la, r, e, le)
+    max_acc = 0
+    acc_entry = {}
+    params_acc = None
+    max_recall = 0
+    recall_entry = {}
+    params_recall = None
+    max_pre = 0
+    pre_entry = {}
+    params_pre = None
+    max_f1 = 0
+    f1_entry = {}
+    params_f1 = None
+    for t in out:
+        if out[t]['val_acc'] > max_acc:
+            max_acc = out[t]['val_acc']
+            params_acc = t
+            acc_entry = out[t]
+        if out[t]['val_recall'] > max_recall:
+            max_recall = out[t]['val_acc']
+            params_recall = t
+            recall_entry = out[t]
+        if out[t]['val_pre'] > max_pre:
+            max_pre = out[t]['val_pre']
+            params_pre = t
+            pre_entry = out[t]
+        if out[t]['val_f1'] > max_f1:
+            max_f1 = out[t]['val_f1']
+            params_f1 = t
+            f1_entry = out[t]
 
-    print(f"Best parameters: {best_params}")
-    print(f"Best score (average validation accuracy): {max_score}")
+    print('ACCURACY')
+    print(f"\tBest parameters: {params_acc}")
+    print(f"\tBest score: {acc_entry}")
 
-    return res
+    print('RECALL')
+    print(f"\tBest parameters: {params_recall}")
+    print(f"\tBest score: {recall_entry}")
+
+    print('PRECISION')
+    print(f"\tBest parameters: {params_pre}")
+    print(f"\tBest score: {pre_entry}")
+
+    print('F1')
+    print(f"\tBest parameters: {params_f1}")
+    print(f"\tBest score: {f1_entry}")
+
+    return out
 
 
 """
@@ -281,24 +329,61 @@ Arguments:
 """
 def parameter_search_logistic(X_train: np.array, t_train: np.array, X_val: np.array, t_val: np.array, N: int=0) -> dict:
     if N == 0:
-        res = build_all_models(lam=LAMBDA, regularizer=REGULARIZER, estimators=None, learning=None, random_search=False, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
+        out = build_all_models(lam=LAMBDA, regularizer=REGULARIZER, estimators=None, learning=None, random_search=False, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
     else:
         params = generate_params_rand(N)
 
-        res = build_all_models(lam=params['lambda'], regularizer=params['regularizer'], estimators=None, learning=None, random_search=True, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
+        out = build_all_models(lam=params['lambda'], regularizer=params['regularizer'], estimators=None, learning=None, random_search=True, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
 
     # search for the optimal combination of parameters
-    max_score = 0
-    best_params = None
-    for la, r in res:
-        if res[(la, r)]['val'] > max_score:
-            max_score = res[(la, r)]['val']
-            best_params = (la, r)
+    max_acc = 0
+    acc_entry = {}
+    params_acc = None
+    max_recall = 0
+    recall_entry = {}
+    params_recall = None
+    max_pre = 0
+    pre_entry = {}
+    params_pre = None
+    max_f1 = 0
+    f1_entry = {}
+    params_f1 = None
+    for t in out:
+        if out[t]['val_acc'] > max_acc:
+            max_acc = out[t]['val_acc']
+            params_acc = t
+            acc_entry = out[t]
+        if out[t]['val_recall'] > max_recall:
+            max_recall = out[t]['val_acc']
+            params_recall = t
+            recall_entry = out[t]
+        if out[t]['val_pre'] > max_pre:
+            max_pre = out[t]['val_pre']
+            params_pre = t
+            pre_entry = out[t]
+        if out[t]['val_f1'] > max_f1:
+            max_f1 = out[t]['val_f1']
+            params_f1 = t
+            f1_entry = out[t]
 
-    print(f"Best parameters: {best_params}")
-    print(f"Best score (average validation accuracy): {max_score}")
+    print('ACCURACY')
+    print(f"\tBest parameters: {params_acc}")
+    print(f"\tBest score: {acc_entry}")
 
-    return res
+    print('RECALL')
+    print(f"\tBest parameters: {params_recall}")
+    print(f"\tBest score: {recall_entry}")
+
+    print('PRECISION')
+    print(f"\tBest parameters: {params_pre}")
+    print(f"\tBest score: {pre_entry}")
+
+    print('F1')
+    print(f"\tBest parameters: {params_f1}")
+    print(f"\tBest score: {f1_entry}")
+
+    return out
+
 
 """
 Normalizes the columns of the given numpy array to have mean 0 and standard deviation 1.

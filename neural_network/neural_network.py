@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import random
 from sklearn.neural_network import MLPClassifier
-from sklearn import metrics
+from sklearn.metrics import f1_score, precision_score, accuracy_score, recall_score
 
 RANDOM_STATE = 20260312
 
@@ -144,8 +144,13 @@ def build_all_models(alpha,
             model = train_neural_network(X_train, t_train, alpha=a, activation=act, batch_size=b, hidden_layer_sizes=h)
                         
             # store the validation and training scores in the `out` dictionary
-            out[(a, act, b, h)]['val'] = model.score(X_valid, t_valid)
-            out[(a, act, b, h)]['train'] = model.score(X_train, t_train)
+            t_pred = model.predict(X_val)
+            t_pred_train = model.predict(X_train)
+            out[(a, act, b, h)]['val_acc'] = accuracy_score(t_val, t_pred)
+            out[(a, act, b, h)]['val_recall'] = recall_score(t_val, t_pred, average='macro')
+            out[(a, act, b, h)]['val_pre'] = precision_score(t_val, t_pred, average='macro')
+            out[(a, act, b, h)]['val_f1'] = f1_score(t_val, t_pred, average='macro')
+            out[(a, act, b, h)]['train_acc'] = accuracy_score(t_train, t_pred_train)
 
     else:
         for a in alpha:
@@ -157,8 +162,13 @@ def build_all_models(alpha,
                         model = train_neural_network(X_train, t_train, alpha=a, activation=act, batch_size=b, hidden_layer_sizes=h)
                         
                         # store the validation and training scores in the `out` dictionary
-                        out[(a, act, b, h)]['val'] = model.score(X_valid, t_valid)
-                        out[(a, act, b, h)]['train'] = model.score(X_train, t_train)
+                        t_pred = model.predict(X_val)
+                        t_pred_train = model.predict(X_train)
+                        out[(a, act, b, h)]['val_acc'] = accuracy_score(t_val, t_pred)
+                        out[(a, act, b, h)]['val_recall'] = recall_score(t_val, t_pred, average='macro')
+                        out[(a, act, b, h)]['val_pre'] = precision_score(t_val, t_pred, average='macro')
+                        out[(a, act, b, h)]['val_f1'] = f1_score(t_val, t_pred, average='macro')
+                        out[(a, act, b, h)]['train_acc'] = accuracy_score(t_train, t_pred_train)
     return out
 
 """
@@ -198,15 +208,51 @@ def tune_hyperparams(X_train, X_val, t_train, t_val, N=0):
         res = build_all_models(alpha=params['alpha'], activation=params['activation'], batch_size=params['batch'], hidden_layer_sizes=params['hidden'], random_search=True, X_train=X_train, X_valid=X_val, t_train=t_train, t_valid=t_val)
 
     # search for the optimal combination of parameters
-    max_score = 0
-    best_params = None
+    max_acc = 0
+    acc_entry = {}
+    params_acc = None
+    max_recall = 0
+    recall_entry = {}
+    params_recall = None
+    max_pre = 0
+    pre_entry = {}
+    params_pre = None
+    max_f1 = 0
+    f1_entry = {}
+    params_f1 = None
     for a, act, b, h in res:
-        if res[(a, act, b, h)]['val'] > max_score:
-            max_score = res[(a, act, b, h)]['val']
-            best_params = (a, act, b, h)
+        if res[(a, act, b, h)]['val_acc'] > max_acc:
+            max_acc = res[(a, act, b, h)]['val_acc']
+            params_acc = (a, act, b, h)
+            acc_entry = res[(a, act, b, h)]
+        if res[(a, act, b, h)]['val_recall'] > max_recall:
+            max_recall = res[(a, act, b, h)]['val_recall']
+            params_recall = (a, act, b, h)
+            recall_entry = res[(a, act, b, h)]
+        if res[(a, act, b, h)]['val_pre'] > max_pre:
+            max_pre = res[(a, act, b, h)]['val_pre']
+            params_pre = (a, act, b, h)
+            pre_entry = res[(a, act, b, h)]
+        if res[(a, act, b, h)]['val_f1'] > max_f1:
+            max_f1 = res[(a, act, b, h)]['val_f1']
+            params_f1 = (a, act, b, h)
+            f1_entry = res[(a, act, b, h)]
 
-    print(f"Best parameters: {best_params}")
-    print(f"Best score: {max_score}")
+    print('ACCURACY')
+    print(f"\tBest parameters: {params_acc}")
+    print(f"\tBest score: {acc_entry}")
+
+    print('RECALL')
+    print(f"\tBest parameters: {params_recall}")
+    print(f"\tBest score: {recall_entry}")
+
+    print('PRECISION')
+    print(f"\tBest parameters: {params_pre}")
+    print(f"\tBest score: {pre_entry}")
+
+    print('F1')
+    print(f"\tBest parameters: {params_f1}")
+    print(f"\tBest score: {f1_entry}")
 
     return res
 
