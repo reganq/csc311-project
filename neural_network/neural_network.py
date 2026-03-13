@@ -8,6 +8,8 @@ import random
 from sklearn.neural_network import MLPClassifier
 from sklearn import metrics
 
+RANDOM_STATE = 20260312
+
 # maximum number of iterations to train for
 MAX_ITER = 1000
 TOLERANCE = 0.0001
@@ -206,10 +208,15 @@ def tune_hyperparams(X_train, X_val, t_train, t_val, N=0):
     print(f"Best parameters: {best_params}")
     print(f"Best score: {max_score}")
 
+    return res
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print(f'usage: {sys.argv[0]} <data-path> <outfile> <num_hyper OPTIONAL> <text-type OPTIONAL>')
         exit(1)
+
+    # seed the RNG
+    random.seed(RANDOM_STATE)
 
     dpath = sys.argv[1]
     opath = sys.argv[2]
