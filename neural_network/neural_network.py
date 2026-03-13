@@ -11,7 +11,7 @@ from sklearn import metrics
 RANDOM_STATE = 20260312
 
 # maximum number of iterations to train for
-MAX_ITER = 1000
+MAX_ITER = 250
 TOLERANCE = 0.0001
 
 # bounds for random search
@@ -19,7 +19,7 @@ ALPHA_BOUND = (1, 1000)
 ALPHA_STEP = 2
 ALPHA_DIV = 1000000
 
-BATCH_BOUND = (10, 100)
+BATCH_BOUND = (10, 70)
 BATCH_STEP = 2
 
 HL_BOUND = (1, 5)
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     random.seed(RANDOM_STATE)
 
     dpath = sys.argv[1]
-    opath = sys.argv[2]
+    ofile = sys.argv[2]
     df = pd.read_csv(dpath)
 
     # split the data
@@ -262,4 +262,4 @@ if __name__ == "__main__":
 
     res_df = pd.DataFrame.from_dict(out_dict, orient='index')
     res_df.index.names = ['alpha', 'activation', 'batch_size', 'hidden_layer_sizes']
-    res_df.to_csv(outfile)
+    res_df.to_csv(ofile)
