@@ -1,0 +1,28 @@
+NEURAL NETWORK - GRIDSEARCH - SIM VECTOR
+Best parameters: (1e-05, 'relu', 16, (25,))
+Best score: 0.9363636363636364
+NEURAL NETWORK - RANDOM SEARCH N=500 - SIM VECTOR
+Best parameters: (0.000755, 'tanh', 32, (410, 415, 445, 455))
+Best score: 0.9363636363636364
+NEURAL NETWORK - GRIDSEARCH - BAG OF WORDS
+NEURAL NETWORK - RANDOM SEARCH N=500 - BAG OF WORDS
+LOGISTIC REGRESSION - GRIDSEARCH - SIM VECTOR
+Best parameters: (0.5, 'l1')
+Best score (average validation accuracy): 0.906060606060606
+LOGISTIC REGRESSION - RANDOM SEARCH N=500 - SIM VECTOR
+Best parameters: (0.55, 'l2')
+Best score (average validation accuracy): 0.9090909090909091
+LOGISTIC REGRESSION - GRIDSEARCH - BAG OF WORDS
+Best parameters: (0.5, 'l1')
+Best score (average validation accuracy): 0.8757575757575757
+LOGISTIC REGRESSION - RANDOM SEARCH N=500 - BAG OF WORDS
+Best parameters: (0.03, 'l2')
+Best score (average validation accuracy): 0.8757575757575757
+ADABOOST - GRIDSEARCH - SIM VECTOR
+Best parameters: (0.1, 'l1', 50, 0.1)
+Best score (average validation accuracy): 0.9121212121212121
+ADABOOST - RANDOM SEARCH N=500 - SIM VECTOR
+Best parameters: (0.19, None, 3, 20.5)
+Best score (average validation accuracy): 0.9333333333333333
+ADABOOST - GRIDSEARCH - BAG OF WORDS
+ADABOOST - RANDOM SEARCH N=500 - BAG OF WORDS

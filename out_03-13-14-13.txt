@@ -1,0 +1,14 @@
+NEURAL NETWORK - GRIDSEARCH - SIM VECTOR
+ACCURACY
+	Best parameters: (1e-05, 'relu', 16, (25,))
+	Best score: {'val_acc': 0.9363636363636364, 'val_recall': 0.9363636363636364, 'val_pre': 0.9367407942383116, 'val_f1': 0.9363476030142697, 'train_acc': 1.0}
+RECALL
+	Best parameters: (1e-05, 'relu', 16, (25,))
+	Best score: {'val_acc': 0.9363636363636364, 'val_recall': 0.9363636363636364, 'val_pre': 0.9367407942383116, 'val_f1': 0.9363476030142697, 'train_acc': 1.0}
+PRECISION
+	Best parameters: (0.0001, 'relu', 16, (25,))
+	Best score: {'val_acc': 0.9363636363636364, 'val_recall': 0.9363636363636364, 'val_pre': 0.9370914110044545, 'val_f1': 0.9364074857098114, 'train_acc': 1.0}
+F1
+	Best parameters: (0.0001, 'relu', 16, (25,))
+	Best score: {'val_acc': 0.9363636363636364, 'val_recall': 0.9363636363636364, 'val_pre': 0.9370914110044545, 'val_f1': 0.9364074857098114, 'train_acc': 1.0}
+NEURAL NETWORK - RANDOM SEARCH N=500 - SIM VECTOR

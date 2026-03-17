@@ -10,17 +10,16 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import f1_score, precision_score, accuracy_score, recall_score
 
 # maximum number of iterations to train for
-MAX_ITER = 2000
-ADA_ITER = 1000
+MAX_ITER = 1000
 TOLERANCE = 0.0001
 
 # random state for adaboost reproducability
 RANDOM_STATE = 20260312
 
 # bounds for random search
-LAMBDA_BOUND = (1, 100)
-LAMBDA_STEP = 2
-LAMBDA_DIV = 100
+LAMBDA_BOUND = (1, 10000000)
+LAMBDA_STEP = 10
+LAMBDA_DIV = 1000000
 
 REGULARIZER_ARR = [
     'l1',
@@ -28,11 +27,11 @@ REGULARIZER_ARR = [
     None # note that it doesn't matter if we pass a lambda without a regularizer, it will be ignored
 ]
 
-NEST_BOUND = (1, 5)
-NEST_STEP = 1
+NEST_BOUND = (10, 500)
+NEST_STEP = 25
 
-LEARN_BOUND = (1, 100)
-LEARN_STEP = 2
+LEARN_BOUND = (1, 200)
+LEARN_STEP = 5
 LEARN_DIV = 100
 
 # Hyperparameters values for linear regression
@@ -134,13 +133,13 @@ def train_adaboost(X: np.array, t: np.array, reg: str=None, lam: float=0, rate: 
         return None
     
     if reg == 'l1':
-        log = LogisticRegression(fit_intercept=True, max_iter=ADA_ITER, tol=TOLERANCE, C=(1/lam),
+        log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER, tol=TOLERANCE, C=(1/lam),
                                      l1_ratio=1, solver='saga')
     elif reg == 'l2':
-        log = LogisticRegression(fit_intercept=True, max_iter=ADA_ITER, tol=TOLERANCE, C=(1/lam),
+        log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER, tol=TOLERANCE, C=(1/lam),
                                      l1_ratio=0)
     else:
-        log = LogisticRegression(fit_intercept=True, max_iter=ADA_ITER, tol=TOLERANCE, C=np.inf, l1_ratio=0)
+        log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER, tol=TOLERANCE, C=np.inf, l1_ratio=0)
 
     ada = AdaBoostClassifier(estimator=log, n_estimators=estimators, learning_rate=rate, random_state=RANDOM_STATE)
 
