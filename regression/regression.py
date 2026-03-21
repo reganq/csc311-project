@@ -442,8 +442,8 @@ if __name__ == "__main__":
         X_val = normalize(X_val)
     else:
         # bag of words
-        X_train[:, :20] = normalize(X_train[:, :20])
-        X_val[:, :20] = normalize(X_val[:, :20])
+        X_train[:, :22] = normalize(X_train[:, :22])
+        X_val[:, :22] = normalize(X_val[:, :22])
 
     # do the training
     if train_ada:

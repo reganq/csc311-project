@@ -4,12 +4,15 @@
 import sys
 import pandas as pd
 import numpy as np
-import statistics as st
+import statistics as stat
 import re
 import math
 
 # should we save the weights
 SAVE_WEIGHTS = True
+
+# file path to save uncleaned test data to
+TEST_FILE = "unclean_test_data.csv"
 
 # whether to use similarity vector (false) or bag-of-words (true) for text features
 USE_BAG = False
@@ -434,7 +437,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         i += 1
     
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -460,7 +463,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
     
@@ -486,7 +489,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         i += 1
         
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -511,7 +514,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
 
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
     
@@ -536,7 +539,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
     
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
     
@@ -561,7 +564,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
     
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -586,7 +589,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
         
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -596,32 +599,34 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
 
     # what room?
     in_bedroom = []
+    in_bathroom = []
     in_office = []
     in_living = []
     in_dining = []
     invalid = []
     for line in in_df.get(["unique_id", "If you could purchase this painting, which room would you put that painting in?"]).iterrows():
-        b = 0
+        be = 0
+        ba = 0
         o = 0
         l = 0
         d = 0
         try:
             val = line[1].iloc[1].lower()
-            b = 1 if ('bathroom' in val) else 0
+            be = 1 if ('bedroom' in val) else 0
+            ba = 1 if ('bathroom' in val) else 0
             o = 1 if ('office' in val) else 0
             l = 1 if ('living' in val) else 0
             d = 1 if ('dining' in val) else 0
         except AttributeError:
             invalid.append((line[1].iloc[0], line[1].iloc[1]))
         
-        in_bedroom.append(b)
+        in_bedroom.append(be)
+        in_bathroom.append(ba)
         in_office.append(o)
         in_living.append(l)
         in_dining.append(d)
     
-    #print(f'For room, valid are {len(in_bedroom) - len(invalid)} / {len(in_bedroom)}')
-    #print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
-    out_df = out_df.assign(place_bedroom=in_bedroom, place_office=in_office, 
+    out_df = out_df.assign(place_bedroom=in_bedroom, place_bathroom=in_bathroom, place_office=in_office, 
                            place_living_room=in_living, place_dining_room=in_dining)
 
     # view with who?
@@ -629,30 +634,33 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
     family = []
     coworkers = []
     solo = []
+    strangers = []
     invalid = []
     for line in in_df.get(["unique_id", "If you could view this art in person, who would you want to view it with?"]).iterrows():
         fr = 0
         fa = 0
         c = 0
-        s = 0
+        st = 0
+        so = 0
         try:
             val = line[1].iloc[1].lower()
             fr = 1 if ('friends' in val) else 0
             fa = 1 if ('family' in val) else 0
             c = 1 if ('coworkers' in val) else 0
-            s = 1 if ('yourself' in val) else 0
+            st = 1 if ('strangers' in val) else 0
+            so = 1 if ('yourself' in val) else 0
         except AttributeError:
             invalid.append((line[1].iloc[0], line[1].iloc[1]))
         
         friends.append(fr)
         family.append(fa)
         coworkers.append(c)
-        solo.append(s)
+        strangers.append(st)
+        solo.append(so)
     
-    #print(f'For viewing with, valid are {len(friends) - len(invalid)} / {len(friends)}')
-    #print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
     out_df = out_df.assign(view_friends=friends, view_family=family, 
-                           view_coworkers=coworkers, view_by_yourself=solo)
+                           view_coworkers=coworkers, view_strangers=strangers,
+                           view_by_yourself=solo)
 
     # what season?
     fall = []
@@ -679,8 +687,6 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         summer.append(su)
         spring.append(sp)
     
-    #print(f'For season, valid are {len(friends) - len(invalid)} / {len(friends)}')
-    #print('invalid are :' + ' '.join([f'({i[0]}, {i[1]}),' for i in invalid]))
     out_df = out_df.assign(like_fall=fall, like_winter=winter, 
                            like_spring=spring, like_summer=summer)
     
@@ -729,7 +735,7 @@ def clean(in_df: pd.DataFrame) -> pd.DataFrame:
         vals.append(val)
         i += 1
 
-    avg = st.mean(vals)
+    avg = stat.mean(vals)
     for j in invalid:
         vals[j] = avg
 
@@ -771,6 +777,13 @@ if __name__ == '__main__':
         # use given set of indices - otherwise cleans the whole thing
         ipath = sys.argv[4]
         ids = np.loadtxt(ipath, dtype=[("id", "i4")])
+
+        # test set
+        if TEST_FILE is not None:
+            test_df = df[~df["unique_id"].isin(ids["id"])]
+            test_df.to_csv(TEST_FILE, index=False)
+
+        # training + validation sets
         df = df[df["unique_id"].isin(ids["id"])]
 
     if not SAVE_WEIGHTS and len(sys.argv) > 5:
