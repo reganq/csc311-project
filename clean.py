@@ -8,6 +8,9 @@ import statistics as st
 import re
 import math
 
+# should we save the weights
+SAVE_WEIGHTS = True
+
 # whether to use similarity vector (false) or bag-of-words (true) for text features
 USE_BAG = False
 
@@ -123,6 +126,38 @@ LILIES_MUSIC = {}
 STARRY_FEEL = {}
 STARRY_FOOD = {}
 STARRY_MUSIC = {}
+
+# save the weights at the given dir
+def save_weights(weight_dir):
+    for paint in ["clocks", "starry", "lilies"]:
+        for quest in ["feels", "food", "music"]:
+            with open(f"{weight_dir}/{paint}-{quest}.txt", 'w') as fp:
+                d = None
+                
+                # very hacky
+                if f'{paint}-{quest}' == 'clocks-feels':
+                    d = CLOCK_FEEL
+                elif f'{paint}-{quest}' == 'clocks-food':
+                    d = CLOCK_FOOD
+                elif f'{paint}-{quest}' == 'clocks-music':
+                    d = CLOCK_MUSIC
+                elif f'{paint}-{quest}' == 'starry-feels':
+                    d = STARRY_FEEL
+                elif f'{paint}-{quest}' == 'starry-food':
+                    d = STARRY_FOOD
+                elif f'{paint}-{quest}' == 'starry-music':
+                    d = STARRY_MUSIC
+                elif f'{paint}-{quest}' == 'lilies-feels':
+                    d = LILIES_FEEL
+                elif f'{paint}-{quest}' == 'lilies-food':
+                    d = LILIES_FOOD
+                elif f'{paint}-{quest}' == 'lilies-music':
+                    d = LILIES_MUSIC
+                else:
+                    raise AttributeError
+
+                for k in d:
+                    fp.write(f'{k} {d[k]}\n')
 
 # load the weight dictionaries from the given directory
 def load_weights(weight_dir):
@@ -738,7 +773,7 @@ if __name__ == '__main__':
         ids = np.loadtxt(ipath, dtype=[("id", "i4")])
         df = df[df["unique_id"].isin(ids["id"])]
 
-    if len(sys.argv) > 5:
+    if not SAVE_WEIGHTS and len(sys.argv) > 5:
         # load the weight dictionaries from the given file
         load_weights(sys.argv[5])
     else:
@@ -749,3 +784,7 @@ if __name__ == '__main__':
 
     opath = sys.argv[2]
     clean_df.to_csv(opath, index=False)
+
+    # save the weights if needed
+    if SAVE_WEIGHTS and len(sys.argv) > 5:
+        save_weights(sys.argv[5])
