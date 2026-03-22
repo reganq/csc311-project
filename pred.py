@@ -4,14 +4,37 @@ Prediction script for CSC311 proectt
 Regan Quartus, Brenden McFarlane, Elise Corbin
 March 26, 2025
 """
+import os
 import sys
 import csv
-import statistics as st
+import statistics as stat
+import re
 import math
 import numpy as np
 import pandas as pd
 
+# painting map of painting number to painting name (just an array)
+PAINTINGS = [
+    "The Persistence of Memory",
+    "The Starry Night",
+    "The Water Lily Pond"
+]
+
+# CLEANED HEADER NAMES
+HEADERS = [
+    "emotional_intensity", "evokes_sombre", "evokes_content", "evokes_calm",
+    "evokes_uneasy", "prominent_colour_count", "prominent_object_count",
+    "place_bedroom", "place_bathroom", "place_office", "place_living_room",
+    "place_dining_room", "view_friends", "view_family", "view_coworkers",
+    "view_strangers", "view_by_yourself", "like_fall", "like_winter", "like_spring",
+    "like_summer", "monetary_value", "text_clock_feels", "text_clock_food", 
+    "text_clock_music", "text_starry_feels", "text_starry_food", "text_starry_music",
+    "text_lilies_feels", "text_lilies_food", "text_lilies_music"
+    ]
+
 # SIMILARITY VECTOR WEIGHTS
+WEIGHT_DIR = "weights"
+
 CLOCK_FEEL = {}
 CLOCK_FOOD = {}
 CLOCK_MUSIC = {}
@@ -80,14 +103,84 @@ BASE_IGNORE = set([
     'clock', 'clocks', 'sky', 'night', 'something'
 ])
 
+# IMPORTING PARAMS
+NEURAL_DIR = "neural_params"
+NEURAL_SIZE = 5
+
+"""
+Neural network class. Comprised of:
+    - weights: list where each index contains a numpy array of one layer's weights. 
+        weights[0] is for the first hidden layer and weights[-1] is for the output layer.
+    - activation: The activation function to use (at each layer besides the last)
+"""
+class NeuralNetwork:
+    weights = []
+    activation = np.tanh
+
+    """
+    Performs inference using the network on the given input.
+        - input_data: numpy array of shape (N, D0) where D0 is the dimension of the 
+            network's input layer.
+    """
+    def predict(self, input_data):
+        N = input_data.shape[0]
+        curr = input_data
+        for i in range(len(self.weights)):
+            tmp = np.dot(curr, self.weights[i])
+            if i == len(self.weights) - 1:
+                # do not activate, instead apply argmax
+                curr = np.argmax(tmp, axis=1)
+            else:
+                curr = self.activation(tmp)
+
+        return curr
+
 """
 Normalizes the columns of the given numpy array to have mean 0 and standard deviation 1.
 """
 def normalize(X: np.array) -> np.array:
+    # TODO: Determine if we should be using mean/std from the training data or if using test vals is fine
     mean = np.mean(X, axis=0)
     std = np.std(X, axis=0)
 
     return (X - mean) / std
+
+"""
+Load all 9 weight dictionaries from the input directory.
+"""
+def load_weights(weight_dir):
+    for paint in ["clocks", "starry", "lilies"]:
+        for quest in ["feels", "food", "music"]:
+            d = {}
+            with open(f"{weight_dir}/{paint}-{quest}.txt", 'r') as fp:
+                for line in fp:
+                    sline = line.split()
+                    word = sline[0]
+                    weight = float(sline[1])
+                    d[word] = weight
+      
+            # very hacky
+            if f'{paint}-{quest}' == 'clocks-feels':
+                CLOCK_FEEL.update(d)
+            elif f'{paint}-{quest}' == 'clocks-food':
+                CLOCK_FOOD.update(d)
+            elif f'{paint}-{quest}' == 'clocks-music':
+                CLOCK_MUSIC.update(d)
+            elif f'{paint}-{quest}' == 'starry-feels':
+                STARRY_FEEL.update(d)
+            elif f'{paint}-{quest}' == 'starry-food':
+                STARRY_FOOD.update(d)
+            elif f'{paint}-{quest}' == 'starry-music':
+                STARRY_MUSIC.update(d)
+            elif f'{paint}-{quest}' == 'lilies-feels':
+                LILIES_FEEL.update(d)
+            elif f'{paint}-{quest}' == 'lilies-food':
+                LILIES_FOOD.update(d)
+            elif f'{paint}-{quest}' == 'lilies-music':
+                LILIES_MUSIC.update(d)
+            else:
+                raise AttributeError
+
 
 """
 Creates similarity vectors for each combination of text response and painting, 
@@ -169,7 +262,7 @@ def process_text(in_df: pd.DataFrame) -> dict[str, pd.Series]:
 """
 Clean the data in the given dataframe, return it as a new dataframe
 """
-def clean(data_df):
+def clean(in_df):
     # init new df
     out_df = pd.DataFrame({"unique_id": in_df['unique_id']})
     
@@ -190,7 +283,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -211,7 +304,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -232,7 +325,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -253,7 +346,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -274,7 +367,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -295,7 +388,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -316,7 +409,7 @@ def clean(data_df):
         i += 1
 
     # replace empty values with the mode
-    mode = st.mode(vals)
+    mode = stat.mode(vals)
     for j in invalid:
         vals[j] = mode
 
@@ -332,11 +425,6 @@ def clean(data_df):
     in_dining = []
     invalid = []
     for line in in_df.get(["unique_id", "If you could purchase this painting, which room would you put that painting in?"]).iterrows():
-        be = 0
-        ba = 0
-        o = 0
-        l = 0
-        d = 0
         try:
             val = line[1].iloc[1].lower()
             be = 1 if ('bedroom' in val) else 0
@@ -345,7 +433,11 @@ def clean(data_df):
             l = 1 if ('living' in val) else 0
             d = 1 if ('dining' in val) else 0
         except AttributeError:
-            continue
+            be = 0
+            ba = 0
+            o = 0
+            l = 0
+            d = 0
 
         in_bedroom.append(be)
         in_bathroom.append(ba)
@@ -363,11 +455,6 @@ def clean(data_df):
     strangers = []
     solo = []
     for line in in_df.get(["unique_id", "If you could view this art in person, who would you want to view it with?"]).iterrows():
-        fr = 0
-        fa = 0
-        c = 0
-        st = 0
-        so = 0
         try:
             val = line[1].iloc[1].lower()
             fr = 1 if ('friends' in val) else 0
@@ -376,7 +463,11 @@ def clean(data_df):
             st = 1 if ('strangers' in val) else 0
             so = 1 if ('yourself' in val) else 0
         except AttributeError:
-            continue
+            fr = 0
+            fa = 0
+            c = 0
+            st = 0
+            so = 0
         
         friends.append(fr)
         family.append(fa)
@@ -394,10 +485,6 @@ def clean(data_df):
     spring = []
     summer = []
     for line in in_df.get(["unique_id", "What season does this art piece remind you of?"]).iterrows():
-        w = 0
-        f = 0
-        sp = 0
-        su = 0
         try:
             val = line[1].iloc[1].lower()
             w = 1 if ('winter' in val) else 0
@@ -405,7 +492,10 @@ def clean(data_df):
             sp = 1 if ('spring' in val) else 0
             su = 1 if ('summer' in val) else 0
         except AttributeError:
-            continue
+            w = 0
+            f = 0
+            sp = 0
+            su = 0
         
         fall.append(f)
         winter.append(w)
@@ -420,9 +510,9 @@ def clean(data_df):
     vals = []
     invalid = []
     i = 0
-    for line in in_df.get(["unique_id", 'Painting', "How much (in Canadian dollars) would you be willing to pay for this painting?"]).iterrows():
+    for line in in_df.get(["unique_id", "How much (in Canadian dollars) would you be willing to pay for this painting?"]).iterrows():
         try:
-            match = re.search(MONEY_PATTERN, line[1].iloc[2].replace(',', '').lower())
+            match = re.search(MONEY_PATTERN, line[1].iloc[1].replace(',', '').lower())
 
             if match:
                 number = float(match.group(1))
@@ -455,7 +545,7 @@ def clean(data_df):
         vals.append(val)
         i += 1
 
-    avg = st.mean(vals)
+    avg = stat.mean(vals)
     for j in invalid:
         vals[j] = avg
 
@@ -467,28 +557,56 @@ def clean(data_df):
     return out_df
 
 """
+Initializes a neural network by reading each matrix from the given directory of params
+"""
+def init_neural(directory, num_layers):
+    net = NeuralNetwork()
+    
+    # load each file from the given directory
+    for i in range(num_layers):
+        tmp_arr = np.load(os.path.join(directory, f'weights-{i}.npy'))
+        net.weights.append(tmp_arr)
+
+    return net
+
+"""
 Using the given model, make predictions for each row of the input dataframe
 """
 def predict(model, data_df):
-    return None
+    preds = []
+
+    # normalize the data and convert it to NP array
+    X = np.array(data_df[HEADERS])
+    X = normalize(X)
+
+    # model specific - determine predictions
+    pred_vals = model.predict(X)
+
+    # convert predictions into text strings
+    for p in np.nditer(pred_vals):
+        preds.append(PAINTINGS[p])
+
+    return preds
 
 """ 
 Returns a list of strings, with each string being the name of prediction for 
 that row in the given file.
 """
 def predict_all(filename):
-    predictions = []
-
     df = pd.read_csv(filename)
+
+    # load the weights
+    load_weights(WEIGHT_DIR)
 
     # clean the data
     cleaned = clean(df)
+    cleaned.to_csv("tmp.csv", index=False)
 
     # init the model
-    model = None
+    model = init_neural(NEURAL_DIR, NEURAL_SIZE)
 
     # make a prediction
-
+    predictions = predict(model, cleaned)
 
     return predictions
 
@@ -507,6 +625,14 @@ if __name__ == '__main__':
         out_df = pd.DataFrame(pred_lst)
         out_df.to_csv(outfile)
 
-    else:
-        for p in pred_lst:
-            print(pred)
+    # compute and print out accuracy
+    input_d = pd.read_csv(infile)
+    n_correct = 0
+    n = 0
+    for row in input_d['Painting']:
+        if (row == pred_lst[n]):
+            n_correct += 1
+        n += 1
+
+    print(f'Number of test examples: {n}')
+    print(f'Test accuracy: {n_correct / n}')

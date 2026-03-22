@@ -14,6 +14,7 @@ Stats:
     - 'val_f1': 0.9364288705667536, 
     - 'train_acc': 1.0
 """
+import os
 import pandas as pd
 import numpy as np
 from sklearn.neural_network import MLPClassifier
@@ -22,6 +23,8 @@ from sklearn.neural_network import MLPClassifier
 TRAINING_DATA = "cleaned_data.csv"
 RANDOM_STATE = 1
 MAX_ITER = 250
+
+PARAMS_DIR = "neural_params"
 
 METADATA_HEADERS = [
     "unique_id",
@@ -73,6 +76,6 @@ if __name__ == '__main__':
     # train the model
     mlp.fit(X_train, t_train)
 
-    # extract params
-    print(mlp.coefs_)
-
+    # extract params - saved as numpy format
+    for i in range(len(mlp.coefs_)):
+        np.save(os.path.join(PARAMS_DIR, f'weights-{i}'), mlp.coefs_[i])
