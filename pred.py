@@ -105,7 +105,7 @@ BASE_IGNORE = set([
 
 # IMPORTING PARAMS
 NEURAL_DIR = "neural_params"
-NEURAL_SIZE = 5
+NEURAL_SIZE = 4
 
 """
 Neural network class. Comprised of:

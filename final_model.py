@@ -1,6 +1,19 @@
 """
 Train the best model and extract the parameters.
 
+Best model (on all features):
+    - learning rate: 0.000657
+    - activation = tanh
+    - batch size = 46
+    hidden layer sizes = (310, 405, 50)
+
+Stats:
+    - 'val_acc': 0.9393939393939394
+    - 'val_recall': 0.9393939393939393
+    - 'val_pre': 0.9395711500974658
+    - 'val_f1': 0.9393294014853648
+    - 'train_acc': 1.0
+
 Best model (on two missing features): 
     - learning rate (alpha) = 0.000755
     - activation = tanh
@@ -43,10 +56,10 @@ def normalize(X: np.array) -> np.array:
 
 if __name__ == '__main__':
     # setup the model
-    alpha = 0.000755
+    alpha = 0.000657
     activation = 'tanh'
-    batch_size = 32
-    hidden_layer_sizes = (410, 415, 445, 455)
+    batch_size = 46
+    hidden_layer_sizes = (310, 405, 50)
 
     mlp = MLPClassifier(
         alpha=alpha, 
