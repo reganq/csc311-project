@@ -103,7 +103,7 @@ if __name__ == '__main__':
     # similarity vectors - normalize everything
     X_train = normalize(X_train)
     X_val = normalize(X_val)
-
+    
     # train the neural network model
     mlp = MLPClassifier(
         alpha=ALPHA, 
@@ -119,16 +119,16 @@ if __name__ == '__main__':
     # create and save a confusion matrix
     mat = ConfusionMatrixDisplay.from_estimator(
         mlp,
-        X_val,
-        t_val,
+        X_train,
+        t_train,
         display_labels=["Persistence", "Starry", "Water Lily"], #["The Persistence of Memory","The Starry Night","The Water Lily Pond"],
         cmap=plt.cm.Blues,
     )
 
     plt.title("Confusion Matrix - Neural Network")
-    plt.savefig("neural-confusion.png")
+    plt.savefig("neural-confusion-test.png")
     plt.close()
-
+    
     # train the logistic regression
     log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER_LOG, tol=TOLERANCE, C=np.inf, l1_ratio=0)
     ada = AdaBoostClassifier(estimator=log, n_estimators=NITERS, learning_rate=LEARN, random_state=RANDOM_STATE_ADA)
@@ -137,14 +137,14 @@ if __name__ == '__main__':
     # create and save a confusion matrix
     mat = ConfusionMatrixDisplay.from_estimator(
         ada,
-        X_val,
-        t_val,
+        X_train,
+        t_train,
         display_labels=["Persistence", "Starry", "Water Lily"], #["The Persistence of Memory","The Starry Night","The Water Lily Pond"],
         cmap=plt.cm.Blues,
     )
 
     plt.title("Confusion Matrix - Logistic Regression trained with Adaboost")
-    plt.savefig("ada-confusion.png")
+    plt.savefig("ada-confusion-test.png")
     plt.close()
 
     # extract params - saved as numpy format
