@@ -91,3 +91,15 @@ F1
 	Best score: {'val_acc': 0.9, 'val_recall': 0.9, 'val_pre': 0.8995915588835942, 'val_f1': 0.8994593688445581, 'train_acc': 1.0}
 NEURAL NETWORK - RANDOM SEARCH N=500 - BAG OF WORDS
 LOGISTIC REGRESSION - GRIDSEARCH - BAG OF WORDS
+ACCURACY
+	Best parameters: (0.25, 'l1')
+	Best score: {'val_acc': 0.8727272727272727, 'val_recall': 0.8727272727272727, 'val_pre': 0.8724747474747474, 'val_f1': 0.8725539551227625, 'train_acc': 1.0}
+RECALL
+	Best parameters: (0.25, 'l1')
+	Best score: {'val_acc': 0.8727272727272727, 'val_recall': 0.8727272727272727, 'val_pre': 0.8724747474747474, 'val_f1': 0.8725539551227625, 'train_acc': 1.0}
+PRECISION
+	Best parameters: (0.25, 'l1')
+	Best score: {'val_acc': 0.8727272727272727, 'val_recall': 0.8727272727272727, 'val_pre': 0.8724747474747474, 'val_f1': 0.8725539551227625, 'train_acc': 1.0}
+F1
+	Best parameters: (0.25, 'l1')
+	Best score: {'val_acc': 0.8727272727272727, 'val_recall': 0.8727272727272727, 'val_pre': 0.8724747474747474, 'val_f1': 0.8725539551227625, 'train_acc': 1.0}
