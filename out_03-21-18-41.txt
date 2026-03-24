@@ -1,0 +1,93 @@
+NEURAL NETWORK - GRIDSEARCH - SIM VECTOR
+ACCURACY
+	Best parameters: (1e-05, 'relu', 16, (50,))
+	Best score: {'val_acc': 0.9212121212121213, 'val_recall': 0.9212121212121213, 'val_pre': 0.9212309429700735, 'val_f1': 0.9209067418369744, 'train_acc': 1.0}
+RECALL
+	Best parameters: (1e-05, 'relu', 16, (50,))
+	Best score: {'val_acc': 0.9212121212121213, 'val_recall': 0.9212121212121213, 'val_pre': 0.9212309429700735, 'val_f1': 0.9209067418369744, 'train_acc': 1.0}
+PRECISION
+	Best parameters: (1e-05, 'relu', 16, (50,))
+	Best score: {'val_acc': 0.9212121212121213, 'val_recall': 0.9212121212121213, 'val_pre': 0.9212309429700735, 'val_f1': 0.9209067418369744, 'train_acc': 1.0}
+F1
+	Best parameters: (1e-05, 'relu', 16, (50,))
+	Best score: {'val_acc': 0.9212121212121213, 'val_recall': 0.9212121212121213, 'val_pre': 0.9212309429700735, 'val_f1': 0.9209067418369744, 'train_acc': 1.0}
+NEURAL NETWORK - RANDOM SEARCH N=500 - SIM VECTOR
+ACCURACY
+	Best parameters: (0.000657, 'tanh', 46, (310, 405, 50))
+	Best score: {'val_acc': 0.9393939393939394, 'val_recall': 0.9393939393939393, 'val_pre': 0.9395711500974658, 'val_f1': 0.9393294014853648, 'train_acc': 1.0}
+RECALL
+	Best parameters: (0.000657, 'tanh', 46, (310, 405, 50))
+	Best score: {'val_acc': 0.9393939393939394, 'val_recall': 0.9393939393939393, 'val_pre': 0.9395711500974658, 'val_f1': 0.9393294014853648, 'train_acc': 1.0}
+PRECISION
+	Best parameters: (0.000657, 'tanh', 46, (310, 405, 50))
+	Best score: {'val_acc': 0.9393939393939394, 'val_recall': 0.9393939393939393, 'val_pre': 0.9395711500974658, 'val_f1': 0.9393294014853648, 'train_acc': 1.0}
+F1
+	Best parameters: (0.000657, 'tanh', 46, (310, 405, 50))
+	Best score: {'val_acc': 0.9393939393939394, 'val_recall': 0.9393939393939393, 'val_pre': 0.9395711500974658, 'val_f1': 0.9393294014853648, 'train_acc': 1.0}
+LOGISTIC REGRESSION - GRIDSEARCH - SIM VECTOR
+ACCURACY
+	Best parameters: (0.75, 'l1')
+	Best score: {'val_acc': 0.9121212121212121, 'val_recall': 0.9121212121212121, 'val_pre': 0.9122775724825835, 'val_f1': 0.9119414848638593, 'train_acc': 0.9400749063670412}
+RECALL
+	Best parameters: (0.75, 'l1')
+	Best score: {'val_acc': 0.9121212121212121, 'val_recall': 0.9121212121212121, 'val_pre': 0.9122775724825835, 'val_f1': 0.9119414848638593, 'train_acc': 0.9400749063670412}
+PRECISION
+	Best parameters: (0.75, 'l1')
+	Best score: {'val_acc': 0.9121212121212121, 'val_recall': 0.9121212121212121, 'val_pre': 0.9122775724825835, 'val_f1': 0.9119414848638593, 'train_acc': 0.9400749063670412}
+F1
+	Best parameters: (0.75, 'l1')
+	Best score: {'val_acc': 0.9121212121212121, 'val_recall': 0.9121212121212121, 'val_pre': 0.9122775724825835, 'val_f1': 0.9119414848638593, 'train_acc': 0.9400749063670412}
+LOGISTIC REGRESSION - RANDOM SEARCH N=500 - SIM VECTOR
+ACCURACY
+	Best parameters: (9.332471, 'l2')
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818183, 'val_pre': 0.9187416817906836, 'val_f1': 0.9174726085124315, 'train_acc': 0.9363295880149812}
+RECALL
+	Best parameters: (9.692341, 'l1')
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818183, 'val_pre': 0.9187416817906836, 'val_f1': 0.9174726085124315, 'train_acc': 0.9363295880149812}
+PRECISION
+	Best parameters: (9.332471, 'l2')
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818183, 'val_pre': 0.9187416817906836, 'val_f1': 0.9174726085124315, 'train_acc': 0.9363295880149812}
+F1
+	Best parameters: (9.332471, 'l2')
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818183, 'val_pre': 0.9187416817906836, 'val_f1': 0.9174726085124315, 'train_acc': 0.9363295880149812}
+ADABOOST - GRIDSEARCH - SIM VECTOR
+ACCURACY
+	Best parameters: (0.1, 'l2', 25, 0.01)
+	Best score: {'val_acc': 0.9151515151515152, 'val_recall': 0.915151515151515, 'val_pre': 0.9153428336336882, 'val_f1': 0.9140666092692177, 'train_acc': 0.9250936329588015}
+RECALL
+	Best parameters: (0.1, 'l2', 25, 0.01)
+	Best score: {'val_acc': 0.9151515151515152, 'val_recall': 0.915151515151515, 'val_pre': 0.9153428336336882, 'val_f1': 0.9140666092692177, 'train_acc': 0.9250936329588015}
+PRECISION
+	Best parameters: (0.1, 'l2', 25, 0.01)
+	Best score: {'val_acc': 0.9151515151515152, 'val_recall': 0.915151515151515, 'val_pre': 0.9153428336336882, 'val_f1': 0.9140666092692177, 'train_acc': 0.9250936329588015}
+F1
+	Best parameters: (0.1, 'l2', 25, 0.01)
+	Best score: {'val_acc': 0.9151515151515152, 'val_recall': 0.915151515151515, 'val_pre': 0.9153428336336882, 'val_f1': 0.9140666092692177, 'train_acc': 0.9250936329588015}
+ADABOOST - RANDOM SEARCH N=500 - SIM VECTOR
+ACCURACY
+	Best parameters: (9.489221, None, 260, 2.2)
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818181, 'val_pre': 0.9180095699249841, 'val_f1': 0.9179331586810596, 'train_acc': 0.9737827715355806}
+RECALL
+	Best parameters: (9.489221, None, 260, 2.2)
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818181, 'val_pre': 0.9180095699249841, 'val_f1': 0.9179331586810596, 'train_acc': 0.9737827715355806}
+PRECISION
+	Best parameters: (9.489221, None, 260, 2.2)
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818181, 'val_pre': 0.9180095699249841, 'val_f1': 0.9179331586810596, 'train_acc': 0.9737827715355806}
+F1
+	Best parameters: (9.489221, None, 260, 2.2)
+	Best score: {'val_acc': 0.9181818181818182, 'val_recall': 0.9181818181818181, 'val_pre': 0.9180095699249841, 'val_f1': 0.9179331586810596, 'train_acc': 0.9737827715355806}
+NEURAL NETWORK - GRIDSEARCH - BAG OF WORDS
+ACCURACY
+	Best parameters: (1e-05, 'relu', 64, (100, 100))
+	Best score: {'val_acc': 0.9, 'val_recall': 0.9, 'val_pre': 0.8995915588835942, 'val_f1': 0.8994593688445581, 'train_acc': 1.0}
+RECALL
+	Best parameters: (1e-05, 'relu', 64, (100, 100))
+	Best score: {'val_acc': 0.9, 'val_recall': 0.9, 'val_pre': 0.8995915588835942, 'val_f1': 0.8994593688445581, 'train_acc': 1.0}
+PRECISION
+	Best parameters: (1e-05, 'relu', 64, (100, 100))
+	Best score: {'val_acc': 0.9, 'val_recall': 0.9, 'val_pre': 0.8995915588835942, 'val_f1': 0.8994593688445581, 'train_acc': 1.0}
+F1
+	Best parameters: (1e-05, 'relu', 64, (100, 100))
+	Best score: {'val_acc': 0.9, 'val_recall': 0.9, 'val_pre': 0.8995915588835942, 'val_f1': 0.8994593688445581, 'train_acc': 1.0}
+NEURAL NETWORK - RANDOM SEARCH N=500 - BAG OF WORDS
+LOGISTIC REGRESSION - GRIDSEARCH - BAG OF WORDS
