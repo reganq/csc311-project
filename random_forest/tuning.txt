@@ -1,0 +1,2 @@
+best BOW results (2nd model listed): entropy, max_depth=13, min_sample_leaf=1, max_ffeatures=0.33, boot_size=749
+best NB results (2nd model listed): gini, max_depth=9, min_sample_leaf=6, max_ffeatures=0.33, boot_size=730
