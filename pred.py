@@ -12,6 +12,8 @@ import re
 import math
 import numpy as np
 import pandas as pd
+from sklearn.metrics import ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 # painting map of painting number to painting name (just an array)
 PAINTINGS = [
@@ -651,3 +653,15 @@ if __name__ == '__main__':
 
     print(f'Number of test examples: {n}')
     print(f'Test accuracy: {n_correct / n}')
+
+    # create confusion matrix
+    mat = ConfusionMatrixDisplay.from_predictions(
+        input_d['Painting'],
+        pred_lst,
+        display_labels=["Persistence", "Starry", "Water Lily"], #["The Persistence of Memory","The Starry Night","The Water Lily Pond"],
+        cmap=plt.cm.Blues,
+    )
+
+    plt.title("Confusion Matrix - Neural Network")
+    plt.savefig("neural-confusion-test.png")
+    plt.close()
