@@ -1,0 +1,20 @@
+--- Logistic Regression ----
+Number of test examples: 507
+Accuracy: 0.8658777120315582
+Recall: 0.8658777120315581
+Precision: 0.8678759366756079
+F1: 0.8665848716410417
+
+--- Neural Network ---
+Number of test examples: 507
+Accuracy: 0.8303747534516766
+Recall: 0.8303747534516766
+Precision: 0.8315028109145756
+F1: 0.826477798751498
+
+--- Random Forest ---
+Number of test examples: 507
+Accuracy: 0.7790927021696252
+Recall: 0.7790927021696253
+Precision: 0.7854948826377397
+F1: 0.7803348695287244

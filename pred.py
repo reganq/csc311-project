@@ -13,7 +13,17 @@ import math
 import numpy as np
 import pandas as pd
 from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import f1_score, precision_score, accuracy_score, recall_score
 import matplotlib.pyplot as plt
+import statistics as stats
+
+# TODO: Maybe delete
+MAX_ITER_LOG = 1000
+TOLERANCE = 0.0001
+MODEL = 'forest'
+NUM_TREES = 100
 
 # painting map of painting number to painting name (just an array)
 PAINTINGS = [
@@ -586,18 +596,91 @@ def init_neural(directory, num_layers):
 
     return net
 
+def get_training():
+    df = pd.read_csv("cleaned_data.csv")
+
+    df = df[df['is_train'] == True]
+
+    t = np.argmax(np.stack([
+        (df['painting'] == 'The Persistence of Memory').astype(np.int8),
+        (df['painting'] == 'The Starry Night').astype(np.int8),
+        (df['painting'] == 'The Water Lily Pond').astype(np.int8)
+    ]), axis=0)
+
+    X = np.array(df[HEADERS])
+
+    X = normalize(X)
+
+    return X, t
+
+
+def init_regression():
+    X_train, t_train = get_training()
+
+    log = LogisticRegression(fit_intercept=True, max_iter=MAX_ITER_LOG, tol=TOLERANCE, C=(1 / 9.332471), l1_ratio=0)
+
+    log.fit(X_train, t_train)
+
+    return log
+
+def decision_tree(df, criterion="entropy", max_depth=3, min_samples_leaf=1, max_features="sqrt"):
+  """
+  run decision tree model on dataframe X
+  criterion=criterion, max_depth=max_depth, min_samples_leaf=min_samples_leaf, max_features=max_features
+  return the decision tree model that is fit as per the parameters in the function.
+  """
+  t = np.argmax(np.stack([
+        (df['painting'] == 'The Persistence of Memory').astype(np.int8),
+        (df['painting'] == 'The Starry Night').astype(np.int8),
+        (df['painting'] == 'The Water Lily Pond').astype(np.int8)
+    ]), axis=0)
+
+  X = np.array(df[HEADERS])
+  tree = DecisionTreeClassifier(criterion=criterion, max_depth=max_depth, min_samples_leaf=min_samples_leaf, max_features=max_features)
+  tree.fit(X, t)
+  return tree
+
+def construct_forest(df, criterion="entropy", max_depth=3, min_samples_leaf=1, max_features="sqrt", boot_size=100):
+  """
+  construct random forest, <forest>, in the form of a list of decision trees.
+  fit each tree on a unique bootstrapped sample of <df> with replacement and size <boot_size>.
+  return <forest>.
+  """
+  forest = []
+  for t in range(NUM_TREES):
+    np.random.seed(311)
+    df_boot = df.sample(n=boot_size, replace=True)
+    forest.append(decision_tree(df=df_boot, criterion=criterion, max_depth=max_depth, min_samples_leaf=min_samples_leaf, max_features=max_features))
+  return forest
+
+def pred_forest(forest, X):
+    votes = np.stack([tree.predict(X) for tree in forest])
+    preds = np.apply_along_axis(stats.mode, 0, votes)
+    return preds
+
+def init_forest():
+    df = pd.read_csv("cleaned_data.csv")
+
+    df = df[df['is_train'] == True]
+
+    return construct_forest(df=df, criterion='gini', max_depth=9, min_samples_leaf=6, max_features=0.33, boot_size=730)
+
 """
 Using the given model, make predictions for each row of the input dataframe
 """
 def predict(model, data_df):
-    preds = []
-
-    # normalize the data and convert it to NP array
-    X = np.array(data_df[HEADERS])
-    X = normalize(X)
+    preds = []    
 
     # model specific - determine predictions
-    pred_vals = model.predict(X)
+    if MODEL == 'neural' or MODEL == 'reg':
+        # normalize the data and convert it to NP array
+        X = np.array(data_df[HEADERS])
+        X = normalize(X)
+        
+        pred_vals = model.predict(X) if MODEL == 'neural' else np.argmax(model.decision_function(X), axis=1)
+
+    elif MODEL == 'forest':
+        pred_vals = pred_forest(model, np.array(data_df[HEADERS]))
 
     # convert predictions into text strings
     for p in np.nditer(pred_vals):
@@ -620,7 +703,12 @@ def predict_all(filename):
     cleaned.to_csv("tmp.csv", index=False)
 
     # init the model
-    model = init_neural(NEURAL_DIR, NEURAL_SIZE)
+    if MODEL == 'neural':
+        model = init_neural(NEURAL_DIR, NEURAL_SIZE)
+    elif MODEL == 'reg':
+        model = init_regression()
+    elif MODEL == 'forest':
+        model = init_forest()
 
     # make a prediction
     predictions = predict(model, cleaned)
@@ -651,8 +739,17 @@ if __name__ == '__main__':
             n_correct += 1
         n += 1
 
+    t_true = input_d['Painting']
+
+    print(f'For model {MODEL}')
     print(f'Number of test examples: {n}')
-    print(f'Test accuracy: {n_correct / n}')
+    #print(f'Test accuracy: {n_correct / n}')
+
+    # report statistics
+    print(f'Accuracy: {accuracy_score(t_true, pred_lst)}') 
+    print(f'Recall: {recall_score(t_true, pred_lst, average='macro')}') 
+    print(f'Precision: {precision_score(t_true, pred_lst, average='macro')}')
+    print(f'F1: {f1_score(t_true, pred_lst, average='macro')}')
 
     # create confusion matrix
     mat = ConfusionMatrixDisplay.from_predictions(
@@ -662,6 +759,13 @@ if __name__ == '__main__':
         cmap=plt.cm.Blues,
     )
 
-    plt.title("Confusion Matrix - Neural Network")
-    plt.savefig("neural-confusion-test.png")
+    if MODEL == 'neural':
+        plt.title("Confusion Matrix - Neural Network")
+        plt.savefig("neural-confusion-test.png")
+    elif MODEL == 'reg':
+        plt.title("Confusion Matrix - Logistic Regression")
+        plt.savefig("regression-confusion-test.png")
+    elif MODEL == 'forest':
+        plt.title("Confusion Matrix - Random Forest")
+        plt.savefig("forest-confusion-test.png")
     plt.close()
