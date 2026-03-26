@@ -104,8 +104,7 @@ BASE_IGNORE = set([
 ])
 
 # IMPORTING PARAMS
-NEURAL_DIR = "neural_params"
-NEURAL_SIZE = 4
+PARAMS_DIR = "regression_params"
 
 # MEAN/STD FROM TRAINING SET FOR NORMALIZATION
 MEAN = np.array([6.30836454, 2.8102372, 3.38451935, 3.69538077, 2.47690387, 3.9650437,
@@ -123,32 +122,27 @@ STD = np.array([2.22314293, 1.38619737, 1.28253808, 1.18441445, 1.39278627, 4.12
     0.02512345])
 
 """
-Neural network class. Comprised of:
-    - weights: list where each index contains a numpy array of one layer's weights. 
-        weights[0] is for the first hidden layer and weights[-1] is for the output layer.
-    - activation: The activation function to use (at each layer besides the last)
+Logistic Regression class. Comprised of:
+    - weights: numpy matrix of weights, of dimension D_in x D_out
+    - intercept: numpy vector of weights, of dimension D_out
+
 """
-class NeuralNetwork:
-    weights = []
-    activation = np.tanh
+class LogisticRegression:
+    weights = None
+    intercept = None
 
     """
-    Performs inference using the network on the given input.
-        - input_data: numpy array of shape (N, D0) where D0 is the dimension of the 
-            network's input layer.
+    Performs inference using the model on the given input.
+        - input_data: numpy array of shape (N, D0) where D0 is the dimension of inputs
     """
     def predict(self, input_data):
         N = input_data.shape[0]
-        curr = input_data
-        for i in range(len(self.weights)):
-            tmp = np.dot(curr, self.weights[i])
-            if i == len(self.weights) - 1:
-                # do not activate, instead apply argmax
-                curr = np.argmax(tmp, axis=1)
-            else:
-                curr = self.activation(tmp)
 
-        return curr
+        arr = [self.intercept.copy() for _ in range(N)]
+
+        tmp = np.dot(input_data, self.weights) + np.stack(arr)
+
+        return np.argmax(tmp, axis=1)
 
 """
 Normalizes the columns of the given numpy array to have mean 0 and standard deviation 1.
@@ -572,17 +566,16 @@ def clean(in_df):
     return out_df
 
 """
-Initializes a neural network by reading each matrix from the given directory of params
+Initializes a regression model by reading it's weights from the given directory of params
 """
-def init_neural(directory, num_layers):
-    net = NeuralNetwork()
+def init_regression(directory):
+    lreg = LogisticRegression()
     
     # load each file from the given directory
-    for i in range(num_layers):
-        tmp_arr = np.load(os.path.join(directory, f'weights-{i}.npy'))
-        net.weights.append(tmp_arr)
+    lreg.weights = np.load(os.path.join(directory, f'weights.npy')).T
+    lreg.intercept = np.load(os.path.join(directory, f'bias.npy'))
 
-    return net
+    return lreg
 
 """
 Using the given model, make predictions for each row of the input dataframe
@@ -618,7 +611,7 @@ def predict_all(filename):
     cleaned.to_csv("tmp.csv", index=False)
 
     # init the model
-    model = init_neural(NEURAL_DIR, NEURAL_SIZE)
+    model = init_regression(PARAMS_DIR)
 
     # make a prediction
     predictions = predict(model, cleaned)
